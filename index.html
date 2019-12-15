@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta name="description" content="">
+		<meta name="author" content="">
+		
+		<!-- Highcharts and Google API -->
+		<script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+		<script src="http://code.highcharts.com/highcharts.js"></script>
+		<script src="https://code.highcharts.com/highcharts-more.js"></script>
+		<script src="http://code.highcharts.com/modules/exporting.js"></script>
+		
+		<script src="http://dweet.io/client/dweet.io.min.js"></script>
+		<script src="js/bootstrap.min.js"></script>
+
+		<title>IoT GrovePi Sensor Submission</title>
+		
+		<link href="css/bootstrap.min.css" rel="stylesheet">
+		<link href="css/2-col-portfolio.css" rel="stylesheet">
+	</head>
+	<!-- Start of Body --> 
+	<body>
+		<!-- Navigation -->
+		<nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+			<div class="container">
+				<!-- Brand and toggle get grouped for better mobile display -->
+				<div class="navbar-header">
+					<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+						<span class="sr-only">Toggle navigation</span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+					</button>
+				</div>
+				<!-- Collect the nav links, forms, and other content for toggling -->
+				<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+					<ul class="nav navbar-nav">
+						<li>
+							<a href="index.html">Live Sensor Data Feed</a>
+						</li>
+						
+					</ul>
+				</div>
+			</div>
+		</nav>
+		
+		<!-- Page Content -->
+		<div class="container">
+			<!-- First Row of Dweet Data Charts -->
+			<div class="row">
+				<div class="col-md-6 portfolio-item">
+					<!-- Distance chart -->
+						<div id="containerDistance"></div>
+							<h3>Distance</h3>
+							<p id="latestDistance">Loading latest Distance reading...</p>
+				</div>
+				
+		
+			</div>
+			<!-- end of first row of results  -->
+
+			<hr>
+			<!-- Dweet info and retrieval info --> 
+			<div class="row text-center">
+				<div class="col-lg-12">
+					<p id="dweetName">Waiting to retrieve Dweet name...</p>
+					<p id="latestInfo">Waiting for latest data retrieved from Dweet...</p>
+					<p id="latestCreated"></p>
+				</div>
+			</div>
+			<!-- end of Dweet info row -->
+
+			<hr>
+
+		</div>
+		<!-- End of container -->
+
+		<!-- Start of script to retrieve data from dweet.io thing --> 
+		<!--This will gather the readings from the sensors and populate the corresponding high chart with the data-->
+	<script language="JavaScript">
+    
+    //An array to store our Distance data
+    var DistanceData = []
+    
+    //An array to store the dweet creation time
+    var dweetCreatedData = []
+    
+    //An array to load local stored data into
+    var localDataCreationDate = []
+    var localDataDistance = []
+
+    var dweetCreatedOn
+    
+$(document).ready(function() {  
+    //This is the name of our Dweet to gather data from
+    var name = 'martin2019'
+	
+    //create an array to store our series data
+    var DistanceSeries = []
+    var dweetCreatedSeries = []
+    
+    
+     //######## -----------------------------FIRST CHART------------------------------------------------- ########
+    //Distance chart 
+   var chart = {
+      type: 'areaspline',
+	  animation: Highcharts.svg,
+      marginRight: 10,
+   };
+   var title = {
+      text: 'Distance'   
+   };   
+   var xAxis = {
+      type: 'datetime',
+      tickPixelInterval: 150,
+    labels: {enabled:false}
+   };
+   var yAxis = {
+      title: {
+         text: 'Space Free ($)'
+      },
+      plotLines: [{
+         value: 0,
+         width: 1,
+         color: '#808080'
+      }]
+   };
+   
+   
+    
+    //this creates the box that appears on hovering over data points in the chart
+   var tooltip = {
+      formatter: function () {
+      return '<b>' + "Distance was "  + Highcharts.numberFormat(this.y, 2)  + "  on " + this.x;
+      }
+   };
+    
+    //this controls the data points on the chart
+   var plotOptions = {
+      pie: {
+         pointStart: 1940,
+         marker: {
+            enabled: false,
+            symbol: 'circle',
+            radius: 2,
+            states: {
+               hover: {
+                 enabled: true
+               }
+            }
+         }
+      }
+   };
+   
+    
+    //this would allow for a chart legend to be displayed
+   var legend = {
+      enabled: false
+   };
+    
+    //this would allow users to export the data with further implimentation
+   var exporting = {
+      enabled: false
+   };
+
+ 
+    //######## ------------------------------------------------------------------------------ ########
+   
+   //this gathers all dweets (up to 5 on free account) to initially display on various charts
+	dweetio.get_all_dweets_for(name, function(err, dweets){
+        
+	    for(theDweet in dweets.reverse())
+	    {
+            //this gets all values of the dweet and stores
+	        var dweet = dweets[theDweet];
+            
+            //this gets values stored under content section of dweet
+            valInfo = dweet.content["Dweet Info"]
+	        val = dweet.content["Distance"]
+            val5 = dweet.content["Disk Percentage Used"]
+            
+            //this gets the dweet name value stored under thing in the dweet
+            dweetName = dweet.thing
+            $('#dweetName').text("Reading data from "+dweetName+" Dweet!");
+            
+            //This adds dweet info value to text
+            $('#latestInfo').text(valInfo);
+            
+            //Gathers dweet creation date & time data
+            dweetCreatedOn = dweet.created
+            $('#latestCreated').text("Last dweet created at "+dweetCreatedOn);
+            
+            //dweetCreatedData.push(dweet.created)
+            
+            
+            //This parses the string value retrieved and pushes to array
+			dweetCreatedData.push(dweetCreatedOn)
+            DistanceData.push(val)  
+                 
+            //this gathers only the last dweet - I'm using just for one chart that needs only 1 data input
+            //diskInformationData.push(val4)
+            diskInformationData = [val5]
+            
+	    }
+        //Logs the value into the browsers console - good for debugging
+		//console.log(diskInformationData)
+		
+        //######## ------------------------------------------------------------------------------ ########
+        
+        
+        //This stores the dweet creation data over time in an array
+		dweetCreatedSeries= [{
+	      name: 'Dweet Creation Date',
+	      data: dweetCreatedData   
+	   }]
+        
+        
+        
+        //This stores the Distance over time data series in an array
+        
+        //https://en.wikipedia.org/wiki/Room_Distance
+		DistanceSeries= [{
+	      name: 'Distance Data',
+	      data: DistanceData,
+          zones: [{
+                value: 18,
+                color: '#7cb5ec'
+            }, {
+                value: 22,
+                color: '#90ed7d'
+            }, {
+                color: '#ED7D7D'
+            }] 
+        
+            
+	   }]
+        
+        //Various data loaded into Distance chart variable
+	   var DistanceChart = {};   
+	   DistanceChart.chart = chart; 
+	   DistanceChart.title = title;     
+	   DistanceChart.tooltip = tooltip;
+	   DistanceChart.xAxis = xAxis;
+	   DistanceChart.yAxis = yAxis; 
+	   DistanceChart.legend = legend;  
+	   DistanceChart.exporting = exporting;   
+	   DistanceChart.series = DistanceSeries;
+	   DistanceChart.plotOptions = plotOptions;
+        
+        //######## ------------------------------------------------------------------------------ ########
+        
+        //Set some additional chart options - not currently in use
+	   Highcharts.setOptions({
+	      global: {
+	         useUTC: false
+	      }
+	   });
+        
+        //Update our div container to hold the Distance chart 
+        $('#containerDistance').highcharts(DistanceChart);
+		chart = $('#containerDistance').highcharts()
+        //Update the xAxis to display Dweet Creation value
+		chart.xAxis[0].update({categories: dweetCreatedData}, true);
+	
+        //This calls the function to setup the reading charts
+        setupSecondChart()
+		setupThirdChart()
+		setupFourthChart() 
+
+	}); 
+    
+        //######## ------------------------------------------------------------------------------ ########
+	
+    //this listens for any new dweets and retrives the data, then updates the charts to display this value
+	dweetio.listen_for(name, function(dweet){
+        
+            //Console message when dweet is processed 
+			console.log("Incomming dweet!!")	
+        
+            //this gets values stored under content section of dweet
+            info = dweet.content["Dweet Info"]
+            //store the new values retrieved from dweet
+	        Distance = dweet.content["Distance"]
+ 
+            diskinformation = dweet.content["Disk Percentage Used"]
+
+            
+            //creates variable and stores our chart data in it
+			var DistanChart = $('#containerDistance').highcharts();
+        
+        
+            //Updates the Dweet Created Array
+            dweetCreatedData.push(dweet.created) 
+            //Update xAxis of the various charts to Dweet Created value
+			DistanChart.xAxis[0].update({categories: dweetCreatedData}, true);
+        
+        
+            //adds to chart series a new data point, which is the integer parsed data taken from new Dweet
+            DistanChart.series[0].addPoint(Distance);
+            //diskChart.series[0].addPoint(diskinformation);
+        
+            //Instead of adding point to series for the disk information chart, we update the value
+            var point = diskChart.series[0].points[0],
+                    newVal,
+                    inc = Math.round((Math.random() - 0.5) * 10);
+
+                newVal = diskinformation + inc;
+                if (newVal < 0 || newVal > 100) {
+                    newVal = diskinformation - inc;
+                }
+
+                point.update(diskinformation);
+        
+        
+            //This adds the text and value of our Distance to our div created before
+            $('#latestDistance').text("The latest Distance reading is "+Distance);
+             
+        
+        
+            //This adds dweet info value to text
+            $('#latestInfo').text(info);
+            
+            //Gathers dweet creation date & time data
+            dweetCreatedOn = dweet.created
+            $('#latestCreated').text("Last dweet created at "+dweetCreatedOn);
+        
+        
+        /////////
+        
+        //This stores the latest values retrieved into HTML5 local storage
+            storeLocalChartData()
+
+	});
+    
+    //######## ------------------------------------------------------------------------------ ########
+    
+    //This stores the various data values into HTML5 local storage
+    var storeLocalChartData = function() {
+        
+            //First we check the browser supports local storage
+            if(typeof(Storage) !== "undefined") {
+                // Browser supports localStorage/sessionStorage
+                console.log("Congradulations!! Your browser allows local storage data to be saved")
+                
+                //Load previously saved local data if any
+                localDataCreationDate = JSON.parse(localStorage.getItem("Dweet Created On"));
+                localDataDistance = JSON.parse(localStorage.getItem("Distance"));
+                
+                //Create Distanorary arrays to store data
+                var storeDataCreationDate = []
+                var storeDataDistance = []
+       
+
+				
+                if (localDataCreationDate != null && localDataCreationDate.length > 0){
+                    storeDataCreationDate = localDataCreationDate.concat(dweetCreatedData);
+                }
+                else{
+                    storeDataCreationDate = dweetCreatedData
+                }
+                
+                //Distance
+                if (localDataDistance != null && localDataDistance.length > 0){
+                    storeDataDistance = localDataDistance.concat(DistanceData); 
+                }
+                else{
+                    storeDataDistance = DistanceData
+                }
+                
+           
+				
+			
+                
+                //Ensure only the last 100 values are stored locally
+                while (storeDataDistance.length > 100){
+                    storeDataDistance.shift();
+                }
+                
+                while (storeDataCreationDate.length > 100){
+                    storeDataCreationDate.shift();
+                }
+     
+                
+                //setting local storage values and results
+				localStorage.setItem("Dweet Created On", JSON.stringify(storeDataCreationDate));
+                localStorage.setItem("Distance", JSON.stringify(storeDataDistance));
+                localStorage.setItem("Disk Information", JSON.stringify(diskInformationData));
+                localStorage.setItem("Last Dweet Stored Date", JSON.stringify(dweetCreatedOn));
+				//Insure required data is stored by printing to console 
+                console.log("Distance " + JSON.stringify(storeDataDistance) + " stored successfully.")
+ 
+            } else {
+                // The browser isn't able to store data
+                console.log("Sorry! Your browser does not support local storage.")	
+            }
+    }	  
+});
+</script>
+	   
+</body>
+
+</html>
